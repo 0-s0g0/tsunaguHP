@@ -6,13 +6,16 @@ import { motion } from "framer-motion"
 // 各文字を構成する図形の定義
 const letterShapes = {
   T: [
-    { type: "rect", x: 0, y: 0, width: 100, height: 20, delay: 0 },
-    { type: "rect", x: 40, y: 20, width: 20, height: 80, delay: 0.2 },
-    { type: "circle", x: 90, y: 10, radius: 10, delay: 0.4 },
+    { type: "rect", x: 12, y: 0, width: 72, height: 24, delay: 0 },
+    { type: "rect", x: 36, y: 23, width: 24, height: 73, delay: 0.2 },
+    { type: "circle", x: 0, y: 0, radius: 12, delay: 0.2 },
+    { type: "circle", x: 72, y: 0, radius: 12, delay: 0.4 },
   ],
   S: [
+    { type: "rect", x: 36, y: 0, width: 48, height: 24, delay: 0.8 },
+    { type: "costam-arc",x: 0, y: 0, Rargeradius: 30,Smallradius: 30, startAngle: 0, endAngle: 90, delay: 0.5},
     { type: "quarter-circle", x: 0, y: 0, size: 40, rotation: 0, delay: 0.6 },
-    { type: "rect", x: 20, y: 20, width: 40, height: 20, delay: 0.8 },
+    
     { type: "quarter-circle", x: 40, y: 40, size: 40, rotation: 180, delay: 1.0 },
     { type: "quarter-circle", x: 0, y: 60, size: 40, rotation: 90, delay: 1.2 },
   ],
@@ -22,6 +25,7 @@ const letterShapes = {
     { type: "rect", x: 60, y: 0, width: 20, height: 60, delay: 1.8 },
   ],
   N: [
+    { type: "custom-arc",x: 0, y: 0, Rargeradius: 30,Smallradius: 30, startAngle: 0, endAngle: 90, delay: 0.5},
     { type: "rect", x: 0, y: 0, width: 20, height: 80, delay: 2.0 },
     { type: "diagonal", x: 20, y: 0, width: 40, height: 80, delay: 2.2 },
     { type: "rect", x: 60, y: 0, width: 20, height: 80, delay: 2.4 },
@@ -132,6 +136,68 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
             fill={color}
           />
         );
+        case "arc":
+            return (
+          <path
+            d={`M ${shape.size} 20 A 30 30 0 0 0 20 0 A 30 30 0 0 0 0 30 L 0 ${shape.size - 30} A 30 30 0 0 0 30 ${shape.size} A 30 30 0 0 0 60 ${shape.size - 20} L 60 ${shape.size - 40} A 10 10 0 0 1 40 ${shape.size - 40} A 10 10 0 0 1 20 ${shape.size - 20} L 20 40 A 10 10 0 0 1 40 20 L ${shape.size - 20} 20`}
+            fill={color}
+          />
+        );
+        case "costam-arc": { // Note: "costam-arc" might be a typo for "custom-arc"
+        const R_outer = shape.Rargeradius;
+        const R_inner = shape.Smallradius;
+        // Center of the arc, assuming SVG canvas is 2*R_outer by 2*R_outer
+        const cx = R_outer;
+        const cy = R_outer;
+
+        const startAngleRad = (shape.startAngle * Math.PI) / 180;
+        const endAngleRad = (shape.endAngle * Math.PI) / 180;
+
+        // Outer arc points
+        const p1x_outer = cx + R_outer * Math.cos(startAngleRad);
+        const p1y_outer = cy + R_outer * Math.sin(startAngleRad);
+        const p2x_outer = cx + R_outer * Math.cos(endAngleRad);
+        const p2y_outer = cy + R_outer * Math.sin(endAngleRad);
+
+        // Inner arc points
+        const p1x_inner = cx + R_inner * Math.cos(startAngleRad);
+        const p1y_inner = cy + R_inner * Math.sin(startAngleRad);
+        const p2x_inner = cx + R_inner * Math.cos(endAngleRad);
+        const p2y_inner = cy + R_inner * Math.sin(endAngleRad);
+
+        const angleDiff = shape.endAngle - shape.startAngle;
+        const largeArcFlag = Math.abs(angleDiff % 360) > 180 ? 1 : 0;
+        
+        // Sweep flag: 1 for CCW, 0 for CW.
+        // Outer arc sweep
+        const sweepFlagOuter = angleDiff > 0 ? 1 : 0;
+        // Inner arc goes from endAngle back to startAngle, so sweep is reversed
+        const sweepFlagInner = angleDiff > 0 ? 0 : 1;
+
+
+        if (R_inner === R_outer) {
+          // Degenerates to a pie slice if radii are equal
+           const d = [
+            `M ${cx} ${cy}`, // Move to center
+            `L ${p1x_outer} ${p1y_outer}`, // Line to start of arc
+            `A ${R_outer} ${R_outer} 0 ${largeArcFlag} ${sweepFlagOuter} ${p2x_outer} ${p2y_outer}`, // Arc
+            "Z", // Close path (line back to center)
+          ].join(" ");
+          return <path d={d} fill={color} />;
+        }
+
+        // Path for annular sector
+        const d = [
+          `M ${p1x_outer} ${p1y_outer}`, // Move to outer arc start
+          `A ${R_outer} ${R_outer} 0 ${largeArcFlag} ${sweepFlagOuter} ${p2x_outer} ${p2y_outer}`, // Outer arc
+          `L ${p2x_inner} ${p2y_inner}`, // Line to inner arc end
+          `A ${R_inner} ${R_inner} 0 ${largeArcFlag} ${sweepFlagInner} ${p1x_inner} ${p1y_inner}`, // Inner arc (reversed direction)
+          "Z", // Close path (line back to outer arc start)
+        ].join(" ");
+
+        return <path d={d} fill={color} />;
+      }
+        
       default:
         return <rect width={20} height={20} fill={color} />;
     }
