@@ -1,11 +1,10 @@
-"use client" // Next.jsのクライアントコンポーネントとしてマーク
+"use client"
 
-import { useState, useEffect } from "react" // Reactのフックをインポート
-import { motion } from "framer-motion" // アニメーションライブラリをインポート
+import { useState, useEffect, useCallback } from "react" // useCallback を追加しましたが、現状必須ではありません
+import { motion } from "framer-motion"
 
 // 各文字を構成する図形の定義
 const letterShapes = {
-  // 各文字に対応する図形とその配置、アニメーション遅延時間を定義
   T: [
     { type: "rect", x: 0, y: 0, width: 100, height: 20, delay: 0 },
     { type: "rect", x: 40, y: 20, width: 20, height: 80, delay: 0.2 },
@@ -45,61 +44,59 @@ const letterShapes = {
   ],
 }
 
-// 図形を描画するコンポーネント
+// 図形コンポーネント
 const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
-  // 初期アニメーション用のプロパティを状態として管理
-  const [initialAnimProps, setInitialAnimProps] = useState<{
-    x: number
-    y: number
-    rotate: number
-    scale: number
-  } | null>(null)
+  const [initialAnimProps, setInitialAnimProps] = useState<null | {
+    x: number;
+    y: number;
+    rotate: number;
+    scale: number;
+  }>(null);
 
   useEffect(() => {
-    // 初期位置をランダムに設定（放射状に飛び出るように）
-    const angle = Math.random() * 2 * Math.PI
-    const distance = 800 + Math.random() * 400
+    // クライアントサイドでのみ実行
+    const angle = Math.random() * 2 * Math.PI;
+    const distance = 800 + Math.random() * 400;
     setInitialAnimProps({
       x: Math.cos(angle) * distance,
       y: Math.sin(angle) * distance,
       rotate: Math.random() * 360,
       scale: 0.5,
-    })
-  }, []) // 一度だけ実行
+    });
+  }, []); // 空の依存配列でマウント時に一度だけ実行
 
-  const finalX = letterIndex * 140 + shape.x // 最終X座標
-  const finalY = 200 + shape.y // 最終Y座標
+  const finalX = letterIndex * 140 + shape.x;
+  const finalY = 200 + shape.y;
 
-  // 色変化のフェーズに応じて色を算出
-  const getShapeColor = () => {
-    if (!isFormed) return "#000000" // 未形成状態なら黒
+  const getShapeColor = useCallback(() => {
+    if (!isFormed) return "#000000";
 
-    const letterProgress = Math.max(0, Math.min(1, (colorPhase - letterIndex * 0.3) / 0.7))
+    const letterProgress = Math.max(0, Math.min(1, (colorPhase - letterIndex * 0.3) / 0.7));
 
-    if (letterProgress === 0) return "#000000"
+    if (letterProgress === 0) return "#000000";
     if (letterProgress === 1) {
-      // 特定の図形や文字だけ赤くする
+      // 最終的な色（赤い部分を含む）
       if (shape.type === "circle" || shape.type === "u-shape" || letterIndex === 2 || letterIndex === 6) {
-        return "#ef4444"
+        return "#ef4444"; // red-500
       }
-      return "#000000"
+      return "#000000";
     }
 
-    // 色のフェードを計算（黒 → 赤）
-    const red = Math.floor(239 * letterProgress)
-    const green = Math.floor(68 * letterProgress)
-    const blue = Math.floor(68 * letterProgress)
-    return `rgb(${red}, ${green}, ${blue})`
-  }
+    // グラデーション中
+    const red = Math.floor(239 * letterProgress); // ef -> 239
+    const green = Math.floor(68 * letterProgress); // 44 -> 68
+    const blue = Math.floor(68 * letterProgress); // 44 -> 68
+    return `rgb(${red}, ${green}, ${blue})`;
+  }, [isFormed, colorPhase, letterIndex, shape.type]);
 
-  // 図形の種類に応じてSVGを描画
-  const renderShape = () => {
-    const color = getShapeColor()
+  const renderShape = useCallback(() => {
+    const color = getShapeColor();
+
     switch (shape.type) {
       case "rect":
-        return <rect width={shape.width} height={shape.height} fill={color} rx={2} />
+        return <rect width={shape.width} height={shape.height} fill={color} rx={2} />;
       case "circle":
-        return <circle r={shape.radius} fill={color} cx={shape.radius} cy={shape.radius} />
+        return <circle r={shape.radius} fill={color} cx={shape.radius} cy={shape.radius} />;
       case "quarter-circle":
         return (
           <path
@@ -107,7 +104,7 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
             fill={color}
             transform={`rotate(${shape.rotation} ${shape.size / 2} ${shape.size / 2})`}
           />
-        )
+        );
       case "u-shape":
         return (
           <path
@@ -116,39 +113,39 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
             stroke={color}
             strokeWidth="8"
           />
-        )
+        );
       case "diagonal":
         return (
           <path d={`M 0 ${shape.height} L ${shape.width} 0 L ${shape.width} 15 L 15 ${shape.height} Z`} fill={color} />
-        )
+        );
       case "triangle":
         return (
           <path
             d={`M ${shape.width / 2} 0 L 0 ${shape.height} L 10 ${shape.height} L ${shape.width / 2} 20 L ${shape.width - 10} ${shape.height} L ${shape.width} ${shape.height} Z`}
             fill={color}
           />
-        )
+        );
       case "c-shape":
         return (
           <path
             d={`M ${shape.size} 20 A 30 30 0 0 0 20 0 A 30 30 0 0 0 0 30 L 0 ${shape.size - 30} A 30 30 0 0 0 30 ${shape.size} A 30 30 0 0 0 60 ${shape.size - 20} L 60 ${shape.size - 40} A 10 10 0 0 1 40 ${shape.size - 40} A 10 10 0 0 1 20 ${shape.size - 20} L 20 40 A 10 10 0 0 1 40 20 L ${shape.size - 20} 20`}
             fill={color}
           />
-        )
+        );
       default:
-        return <rect width={20} height={20} fill={color} />
+        return <rect width={20} height={20} fill={color} />;
     }
-  }
+  }, [getShapeColor, shape]);
 
-  // 初期アニメーションのプロパティがまだ未設定なら透明な要素を返す
+  // initialAnimProps が設定されるまで何もレンダリングしない
   if (!initialAnimProps) {
-    return <div style={{ position: 'absolute', opacity: 0 }} />
+    return null;
   }
 
   return (
     <motion.div
       className="absolute"
-      initial={initialAnimProps} // 初期状態
+      initial={initialAnimProps}
       animate={{
         x: finalX,
         y: finalY,
@@ -162,51 +159,71 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
       }}
     >
       <svg
-        width={shape.width || shape.radius * 2 || shape.size}
-        height={shape.height || shape.radius * 2 || shape.size}
-        className="overflow-visible"
+        width={shape.width || shape.radius * 2 || shape.size || 0} // size が 0 の場合のフォールバック
+        height={shape.height || shape.radius * 2 || shape.size || 0} // size が 0 の場合のフォールバック
+        className="overflow-visible" // SVGがクリッピングされないように
+        style={{ display: 'block' }} // 余分なスペースを避ける
       >
-        {renderShape()} {/* 図形を描画 */}
+        {renderShape()}
       </svg>
     </motion.div>
-  )
+  );
+};
+
+interface TsunaguHeroProps {
+  onAnimationComplete?: () => void;
 }
 
-export default function TsunaguHero() {
-  const [isFormed, setIsFormed] = useState(false) // 図形が整列済みか
-  const [colorPhase, setColorPhase] = useState(0) // 色の進行段階
+export default function TsunaguHero({ onAnimationComplete }: TsunaguHeroProps) {
+  const [isFormed, setIsFormed] = useState(false);
+  const [colorPhase, setColorPhase] = useState(0);
 
   useEffect(() => {
-    // 図形が形成されるタイミングを設定
+    // 図形の移動完了を待つ
     const formationTimer = setTimeout(() => {
-      setIsFormed(true)
-    }, 6000)
+      setIsFormed(true);
+    }, 6000); // 全てのshape.delayの最大値 + duration(2s) を考慮した時間
 
-    // 色変化を開始するタイミングを設定
+    // 色の変化開始
     const colorTimer = setTimeout(() => {
       const interval = setInterval(() => {
         setColorPhase((prev) => {
-          if (prev >= 7) {
-            clearInterval(interval)
-            return 7
+          if (prev >= 7) { // letters.length
+            clearInterval(interval);
+            if (onAnimationComplete) { // 色の変化が完了したら通知
+                // onAnimationComplete(); // このタイミングか、さらに遅延させるか
+            }
+            return 7;
           }
-          return prev + 0.1
-        })
-      }, 100)
-    }, 6500)
+          return prev + 0.1;
+        });
+      }, 100); // 色の変化の速度
+      // interval をクリアするために return で関数を返す
+      return () => clearInterval(interval);
+    }, 6500); // formationTimer の後
 
-    // クリーンアップ関数
     return () => {
-      clearTimeout(formationTimer)
-      clearTimeout(colorTimer)
-    }
-  }, [])
+      clearTimeout(formationTimer);
+      clearTimeout(colorTimer); // colorTimer 自体もクリア
+    };
+  }, [onAnimationComplete]);
 
-  const letters = ["T", "S", "U1", "N", "A", "G", "U2"] // 表示する文字の配列
+  // アニメーション完了の通知 (全体のタイムアウトとして)
+  useEffect(() => {
+    const completeTimer = setTimeout(() => {
+      if (onAnimationComplete) {
+        onAnimationComplete();
+      }
+    }, 10000); // 10秒後にアニメーション完了とみなす (適宜調整)
+
+    return () => clearTimeout(completeTimer);
+  }, [onAnimationComplete]);
+
+  const letters = ["T", "S", "U1", "N", "A", "G", "U2"];
 
   return (
-    <div className="relative w-full h-screen bg-white overflow-hidden flex items-center justify-center">
-      {/* 背景格子線 */}
+    <div className="relative w-full h-screen bg-white overflow-hidden flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      {/* 格子線の背景 */}
       <div className="absolute inset-0 opacity-30">
         <svg width="100%" height="100%" className="absolute inset-0">
           <defs>
@@ -218,39 +235,39 @@ export default function TsunaguHero() {
         </svg>
       </div>
 
-      {/* メインの文字描画領域 */}
-      <motion.div className="relative w-[980px] h-[400px] z-10">
+      <motion.div
+        className="relative h-[200px] sm:h-[300px] lg:h-[400px] z-10 scale-[35%] sm:scale-75 lg:scale-100 -translate-x-[100px] sm:translate-x-0"
+        style={{ width: '980px' }} // コンテンツの基本幅を指定
+      >
         {letters.map((letter, letterIndex) => (
-          <div key={letter}>
-            {letterShapes[letter as keyof typeof letterShapes].map((shape, shapeIndex) => (
-              <Shape
-                key={`${letter}-${shapeIndex}`}
-                shape={shape}
-                letterIndex={letterIndex}
-                isFormed={isFormed}
-                colorPhase={colorPhase}
-              />
-            ))}
-          </div>
+          // letterShapesの型安全性を高めるために、letterがキーとして存在するか確認
+          (letterShapes[letter as keyof typeof letterShapes] || []).map((shape, shapeIndex) => (
+            <Shape
+              key={`${letter}-${letterIndex}-${shapeIndex}`} // より一意なキー
+              shape={shape}
+              letterIndex={letterIndex}
+              isFormed={isFormed}
+              colorPhase={colorPhase}
+            />
+          ))
         ))}
       </motion.div>
-
-      {/* 装飾用のアニメーション図形 */}
+      {/* 背景の装飾的な図形 */}
       <motion.div
         className="absolute top-20 left-20 w-8 h-8 border-2 border-gray-300 rounded-full z-20"
         animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }} // Infinity を使用
       />
       <motion.div
         className="absolute bottom-32 right-32 w-6 h-6 bg-gray-200 z-20"
         animate={{ rotate: -360 }}
-        transition={{ duration: 25, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
       />
       <motion.div
         className="absolute top-1/3 right-20 w-10 h-5 border-2 border-gray-300 rounded-full z-20"
         animate={{ y: [0, -20, 0] }}
-        transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
     </div>
-  )
+  );
 }
