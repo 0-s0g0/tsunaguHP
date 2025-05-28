@@ -1,48 +1,114 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react" // useCallback を追加しましたが、現状必須ではありません
+import { useState, useEffect, useCallback } from "react"
 import { motion } from "framer-motion"
 
-// 各文字を構成する図形の定義
+// ヘルパー関数 (グローバルまたはコンポーネントのスコープ内に配置)
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  hex = hex.replace(shorthandRegex, (m, r, g, b) => {
+    return r + r + g + g + b + b;
+  });
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
+// 各文字を構成する図形の定義 (変更なしのため省略)
 const letterShapes = {
   T: [
-    { type: "rect", x: 0, y: 0, width: 100, height: 20, delay: 0 },
-    { type: "rect", x: 40, y: 20, width: 20, height: 80, delay: 0.2 },
-    { type: "circle", x: 90, y: 10, radius: 10, delay: 0.4 },
+    { type: "rect", x: 12, y: 0, width: 72, height: 24, delay: 0 ,color: "#2BB673" },
+    { type: "rect", x: 36, y: 23, width: 24, height: 73, delay: 0.2,color: "#2BB673"  },
+    { type: "circle", x: 0, y: 0, radius: 12, delay: 0.2,color: "#2BB673"  }, // x,yはSVG要素の左上基点
+    { type: "circle", x: 72, y: 0, radius: 12, delay: 0.4,color: "#2BB673"  },// 同上
   ],
   S: [
-    { type: "quarter-circle", x: 0, y: 0, size: 40, rotation: 0, delay: 0.6 },
-    { type: "rect", x: 20, y: 20, width: 40, height: 20, delay: 0.8 },
-    { type: "quarter-circle", x: 40, y: 40, size: 40, rotation: 180, delay: 1.0 },
-    { type: "quarter-circle", x: 0, y: 60, size: 40, rotation: 90, delay: 1.2 },
-  ],
+    { type: "rect", x: 36, y: 0, width: 48, height: 24, delay: 0.8, color:"#F7941D"  },
+    { type: "fan-shape",
+      x: 14, y: 0, // SVGコンテナの文字 'S' 内での左上位置
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 54, arcStartX: 0, arcStartY: -54, arcEndX: 54, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 1, },
+      displayWidth: 54,  displayHeight: 54, shapeViewBox: "-46 -54 100 100",  delay: 1.0, rotation: 270 , color:"#ED1D26"   },
+    { type: "fan-shape",
+      x: 14, y: 0, // SVGコンテナの文字 'S' 内での左上位置
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 54, arcStartX: 0, arcStartY: -54, arcEndX: 54, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 1, },
+      displayWidth: 54,  displayHeight: 54, shapeViewBox: "-46 -54 100 100",  delay: 1.0, rotation: 180  , color:"#000000"},
+    { type: "circle", x: 32, y: 24, radius: 7, delay: 0.4 , color:"#FFFFFF"  },
+      { type: "rect", x: 38, y: 38, width: 24, height: 20, delay: 0.8,color:"#F7941D"  },
+    { type: "fan-shape",
+      x: 14, y: 0, // SVGコンテナの文字 'S' 内での左上位置
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 54, arcStartX: 0, arcStartY: -54, arcEndX: 54, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 1, },
+      displayWidth: 54,  displayHeight: 54, shapeViewBox: "-83 -124 100 100",  delay: 1.0, rotation: 0 , color:"#F7941D"  }, // color 追加
+      { type: "fan-shape",
+      x: 14, y: 0, // SVGコンテナの文字 'S' 内での左上位置
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 54, arcStartX: 0, arcStartY: -54, arcEndX: 54, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 1, },
+      displayWidth: 54,  displayHeight: 54, shapeViewBox: "-83 -124 100 100",  delay: 1.0, rotation: 90 ,color: "#2BB673"  },
+    
+    { type: "rect", x: 12, y: 72, width: 48, height: 24, delay: 0.8,color:"#F7941D"  },
+    { type: "circle", x: 54, y: 58, radius: 7, delay: 0.4 ,color:"#FFFFFF" },
+  ],  
   U1: [
-    { type: "rect", x: 0, y: 0, width: 20, height: 60, delay: 1.4 },
-    { type: "u-shape", x: 20, y: 40, width: 40, height: 40, delay: 1.6 },
-    { type: "rect", x: 60, y: 0, width: 20, height: 60, delay: 1.8 },
+    { type: "rect", x: 0, y: 0, width: 24, height: 48, delay: 1.4,color:"#F7941D"  },
+    { type: "rect", x: 73, y: 0,  width: 24, height: 48, delay: 1.6,color:"#F7941D"  },
+    { type: "fan-shape",
+      x: 14, y: 0, 
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 70, arcStartX: -70, arcStartY: 0, arcEndX: 70, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 0, },
+      displayWidth: 70,  displayHeight: 69, shapeViewBox: "-49 -68 100 100",  delay: 1.0, rotation: 0,color:"#ED1D26"   },
+    { type: "fan-shape",
+      x: 14, y: 0, 
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 50, arcStartX: -50, arcStartY: 0, arcEndX: 50, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 0, },
+      displayWidth: 50,  displayHeight: 50, shapeViewBox: "-69 -91 100 100",  delay: 1.0, rotation: 0,color:"#FFFFFF"  },
   ],
-  N: [
-    { type: "rect", x: 0, y: 0, width: 20, height: 80, delay: 2.0 },
-    { type: "diagonal", x: 20, y: 0, width: 40, height: 80, delay: 2.2 },
-    { type: "rect", x: 60, y: 0, width: 20, height: 80, delay: 2.4 },
-    { type: "circle", x: 45, y: 35, radius: 8, delay: 2.6 },
+  N: [ // N に color を追加
+    { type: "rect2", x: 37, y: -6, width: 20, height: 110, delay: 2.4 ,angle:315, color: "#ED1D26"}, 
+    { type: "rect", x: 0, y: 12, width: 20, height: 84, delay: 2.0, color: "#662D92" },
+    { type: "rect", x: 72, y: 0, width: 20, height: 84, delay: 2.0, color: "#662D92" },
+    { type: "circle", x: 0, y: 0, radius: 10, delay: 0.4, color: "#662D92" },
+    { type: "circle", x: 72, y: 75, radius: 10, delay: 0.4, color: "#662D92" },
   ],
-  A: [
-    { type: "triangle", x: 20, y: 0, width: 40, height: 80, delay: 2.8 },
-    { type: "rect", x: 15, y: 40, width: 50, height: 15, delay: 3.0 },
-    { type: "circle", x: 40, y: 70, radius: 10, delay: 3.2 },
+  A: [ 
+    { type: "rect", x: 0, y: 46, width: 24, height: 50, delay: 1.4,color:"#0F75BB"  },
+    { type: "rect", x: 73, y: 46,  width: 24, height: 50, delay: 1.6,color:"#0F75BB"  },
+    { type: "fan-shape",
+      x: 14, y: 0, 
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 70, arcStartX: -70, arcStartY: 0, arcEndX: 70, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 1, },
+      displayWidth: 70,  displayHeight: 69, shapeViewBox: "-49 -68 100 100",  delay: 1.0, rotation: 0,color:"#24AAE1"   },
+    { type: "fan-shape",
+      x: 14, y: 0, 
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 50, arcStartX: -50, arcStartY: 0, arcEndX: 50, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 1, },
+      displayWidth: 50,  displayHeight: 50, shapeViewBox: "-69 -96 100 100",  delay: 1.0, rotation: 0,color:"#FFFFFF"  },
+    { type: "circle", x: 31, y: 50, radius: 18, delay: 0.4, color: "#ED1D26" },
+
   ],
   G: [
-    { type: "c-shape", x: 0, y: 0, size: 80, delay: 3.4 },
-    { type: "rect", x: 40, y: 35, width: 30, height: 15, delay: 3.6 },
-    { type: "rect", x: 55, y: 35, width: 15, height: 30, delay: 3.8 },
+    {type: "fan-shape",
+    x: 14, y: 0,
+    shapeParams: { pivotX: 0, pivotY: 0, radius: 70, arcStartX: 49.497, arcStartY: -49.497, arcEndX:  49.497, arcEndY: 49.497, arcLargeFlag: 1, arcSweepFlag: 0, }, // sweepFlagが0なので上半円
+    displayWidth: 70, displayHeight: 69, shapeViewBox: "-49 -68 100 100", delay: 1.0, rotation: 0, color:"#2BB673"},
+    { type: "circle", x: 24, y: 24, radius: 24, delay: 0.4 ,color:"#FFFFFF" },
+    { type: "fan-shape",
+    x: 14, y: 0,
+    shapeParams: { pivotX: 0, pivotY: 0, radius: 70, arcStartX: 49.497, arcStartY: 49.497, arcEndX: 70, arcEndY: 0, arcLargeFlag: 0, arcSweepFlag: 0, }, // sweepFlagが0なので上半円
+    displayWidth: 70, displayHeight: 69, shapeViewBox: "-49 -68 100 100", delay: 1.0, rotation: 0, color:"#000000"},
   ],
-  U2: [
-    { type: "rect", x: 0, y: 0, width: 20, height: 60, delay: 4.0 },
-    { type: "u-shape", x: 20, y: 40, width: 40, height: 40, delay: 4.2 },
-    { type: "rect", x: 60, y: 0, width: 20, height: 60, delay: 4.4 },
+  U2: [ // U2 に color を追加
+     { type: "rect", x: 0, y: 0, width: 24, height: 48, delay: 1.4,color:"#F7941D"  },
+    { type: "rect", x: 73, y: 0,  width: 24, height: 48, delay: 1.6,color:"#F7941D"  },
+    { type: "fan-shape",
+      x: 14, y: 0, 
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 70, arcStartX: -70, arcStartY: 0, arcEndX: 70, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 0, },
+      displayWidth: 70,  displayHeight: 69, shapeViewBox: "-49 -68 100 100",  delay: 1.0, rotation: 0,color:"#ED1D26"   },
+    { type: "fan-shape",
+      x: 14, y: 0, 
+      shapeParams: { pivotX: 0, pivotY: 0, radius: 50, arcStartX: -50, arcStartY: 0, arcEndX: 50, arcEndY: 0,  arcLargeFlag: 0, arcSweepFlag: 0, },
+      displayWidth: 50,  displayHeight: 50, shapeViewBox: "-69 -91 100 100",  delay: 1.0, rotation: 0,color:"#FFFFFF"  },
   ],
 }
+
 
 // 図形コンポーネント
 const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
@@ -54,7 +120,6 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
   }>(null);
 
   useEffect(() => {
-    // クライアントサイドでのみ実行
     const angle = Math.random() * 2 * Math.PI;
     const distance = 800 + Math.random() * 400;
     setInitialAnimProps({
@@ -63,84 +128,209 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
       rotate: Math.random() * 360,
       scale: 0.5,
     });
-  }, []); // 空の依存配列でマウント時に一度だけ実行
+  }, []);
 
   const finalX = letterIndex * 140 + shape.x;
   const finalY = 200 + shape.y;
 
-  const getShapeColor = useCallback(() => {
-    if (!isFormed) return "#000000";
+  const getShapeDrawingProps = useCallback(() => {
+    const initialFillColor = "#CCCCCC"; // グレー
+    const initialStrokeColor = "#000000"; // 黒
+    const initialStrokeWidth = 1.5; // 移動中の淵の太さ
 
-    const letterProgress = Math.max(0, Math.min(1, (colorPhase - letterIndex * 0.3) / 0.7));
+    // shape.color がない場合はデフォルトで黒にする
+    const targetShapeColor = shape.color || "#000000";
 
-    if (letterProgress === 0) return "#000000";
-    if (letterProgress === 1) {
-      // 最終的な色（赤い部分を含む）
-      if (shape.type === "circle" || shape.type === "u-shape" || letterIndex === 2 || letterIndex === 6) {
-        return "#ef4444"; // red-500
-      }
-      return "#000000";
+    if (!isFormed) {
+      return {
+        fill: initialFillColor,
+        stroke: initialStrokeColor,
+        strokeWidth: initialStrokeWidth,
+      };
     }
 
-    // グラデーション中
-    const red = Math.floor(239 * letterProgress); // ef -> 239
-    const green = Math.floor(68 * letterProgress); // 44 -> 68
-    const blue = Math.floor(68 * letterProgress); // 44 -> 68
-    return `rgb(${red}, ${green}, ${blue})`;
-  }, [isFormed, colorPhase, letterIndex, shape.type]);
+    // isFormed === true (移動完了後)
+    // letterProgress: 0 (色変化開始前) -> 1 (完全に指定色)
+    const letterProgress = Math.max(0, Math.min(1, (colorPhase - letterIndex * 0.3 - 0.5) / 0.5)); // 微調整
+
+    const startRgb = hexToRgb(initialFillColor);
+    const endRgb = hexToRgb(targetShapeColor);
+
+    let currentFill = targetShapeColor;
+    if (startRgb && endRgb) {
+      const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * letterProgress);
+      const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * letterProgress);
+      const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * letterProgress);
+      currentFill = `rgb(${r},${g},${b})`;
+    }
+    
+    // ストロークは色づき始めると消える
+    const currentStrokeWidth = initialStrokeWidth * (1 - letterProgress);
+    const currentStroke = letterProgress < 1 ? initialStrokeColor : "none";
+
+
+    // u-shape は特別扱い: 常に線画として扱い、線の色が変わる
+    if (shape.type === "u-shape") {
+        const uShapeStrokeColor = letterProgress === 1 ? targetShapeColor : initialFillColor; // 線自体の色
+        if (startRgb && endRgb) {
+            const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * letterProgress);
+            const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * letterProgress);
+            const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * letterProgress);
+            return {
+                fill: "none",
+                stroke: `rgb(${r},${g},${b})`,
+                strokeWidth: shape.strokeWidth || 8, // 元の strokeWidth を優先
+            };
+        }
+         return { // フォールバック
+            fill: "none",
+            stroke: targetShapeColor,
+            strokeWidth: shape.strokeWidth || 8,
+        };
+    }
+
+
+    return {
+      fill: currentFill,
+      stroke: currentStroke,
+      strokeWidth: currentStrokeWidth,
+    };
+  }, [isFormed, colorPhase, letterIndex, shape.color, shape.type, shape.strokeWidth]);
+
 
   const renderShape = useCallback(() => {
-    const color = getShapeColor();
+    const drawingProps = getShapeDrawingProps();
 
     switch (shape.type) {
       case "rect":
-        return <rect width={shape.width} height={shape.height} fill={color} rx={2} />;
+        return (
+          <rect
+            width={shape.width}
+            height={shape.height}
+            rx={2}
+            {...drawingProps}
+          />
+        );
       case "circle":
-        return <circle r={shape.radius} fill={color} cx={shape.radius} cy={shape.radius} />;
-      case "quarter-circle":
+        return (
+          <circle
+            r={shape.radius}
+            cx={shape.radius}
+            cy={shape.radius}
+            {...drawingProps}
+          />
+        );
+      case "rect2": {
+        const rotationAngle = shape.angle || 0;
+        const transformValue = `rotate(${rotationAngle} ${shape.width / 2} ${shape.height / 2})`;
+        return (
+          <rect
+            width={shape.width}
+            height={shape.height}
+            rx={2}
+            transform={transformValue}
+            {...drawingProps}
+          />
+        );
+      }
+      case "quarter-circle": // path系は fill と stroke を個別に扱う
         return (
           <path
             d={`M 0 ${shape.size} A ${shape.size} ${shape.size} 0 0 1 ${shape.size} 0 L 0 0 Z`}
-            fill={color}
             transform={`rotate(${shape.rotation} ${shape.size / 2} ${shape.size / 2})`}
+            fill={drawingProps.fill}
+            stroke={drawingProps.stroke}
+            strokeWidth={drawingProps.strokeWidth}
           />
         );
-      case "u-shape":
-        return (
-          <path
-            d={`M 0 0 L 0 ${shape.height - 20} A 20 20 0 0 0 20 ${shape.height} L ${shape.width - 20} ${shape.height} A 20 20 0 0 0 ${shape.width} ${shape.height - 20} L ${shape.width} 0`}
-            fill="none"
-            stroke={color}
-            strokeWidth="8"
-          />
-        );
+      case "u-shape": // getShapeDrawingProps で特別扱い済み
+         return (
+           <path
+             d={`M 0 0 L 0 ${shape.height - 20} A 20 20 0 0 0 20 ${shape.height} L ${shape.width - 20} ${shape.height} A 20 20 0 0 0 ${shape.width} ${shape.height - 20} L ${shape.width} 0`}
+             fill={drawingProps.fill} // "none"
+             stroke={drawingProps.stroke}
+             strokeWidth={drawingProps.strokeWidth} // 元の太さを使用
+           />
+         );
       case "diagonal":
         return (
-          <path d={`M 0 ${shape.height} L ${shape.width} 0 L ${shape.width} 15 L 15 ${shape.height} Z`} fill={color} />
+          <path
+            d={`M 0 ${shape.height} L ${shape.width} 0 L ${shape.width} 15 L 15 ${shape.height} Z`}
+            fill={drawingProps.fill}
+            stroke={drawingProps.stroke}
+            strokeWidth={drawingProps.strokeWidth}
+          />
         );
       case "triangle":
         return (
           <path
             d={`M ${shape.width / 2} 0 L 0 ${shape.height} L 10 ${shape.height} L ${shape.width / 2} 20 L ${shape.width - 10} ${shape.height} L ${shape.width} ${shape.height} Z`}
-            fill={color}
+            fill={drawingProps.fill}
+            stroke={drawingProps.stroke}
+            strokeWidth={drawingProps.strokeWidth}
           />
         );
       case "c-shape":
+      case "arc": // arc と c-shape は同じパスデータだったのでまとめる
         return (
           <path
             d={`M ${shape.size} 20 A 30 30 0 0 0 20 0 A 30 30 0 0 0 0 30 L 0 ${shape.size - 30} A 30 30 0 0 0 30 ${shape.size} A 30 30 0 0 0 60 ${shape.size - 20} L 60 ${shape.size - 40} A 10 10 0 0 1 40 ${shape.size - 40} A 10 10 0 0 1 20 ${shape.size - 20} L 20 40 A 10 10 0 0 1 40 20 L ${shape.size - 20} 20`}
-            fill={color}
+            fill={drawingProps.fill}
+            stroke={drawingProps.stroke}
+            strokeWidth={drawingProps.strokeWidth}
           />
         );
-      default:
-        return <rect width={20} height={20} fill={color} />;
-    }
-  }, [getShapeColor, shape]);
+      case "fan-shape": {
+        const params = shape.shapeParams || {};
+        const pivotX = params.pivotX ?? 0;
+        const pivotY = params.pivotY ?? 0;
+        const radius = params.radius;
+        const arcStartX = params.arcStartX;
+        const arcStartY = params.arcStartY;
+        const arcEndX = params.arcEndX;
+        const arcEndY = params.arcEndY;
+        const largeArcFlag = params.arcLargeFlag ?? 0;
+        const sweepFlag = params.arcSweepFlag ?? 1;
 
-  // initialAnimProps が設定されるまで何もレンダリングしない
+        if (radius === undefined || arcStartX === undefined || arcStartY === undefined || arcEndX === undefined || arcEndY === undefined) {
+          console.warn("Fan shape is missing required parameters in shapeParams:", shape);
+          return <rect width="10" height="10" fill="red" />;
+        }
+
+        const d = `M ${pivotX} ${pivotY} L ${arcStartX} ${arcStartY} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${arcEndX} ${arcEndY} Z`;
+        
+        return (
+          <path
+            d={d}
+            transform={shape.rotation ? `rotate(${shape.rotation} ${pivotX} ${pivotY})` : ""}
+            fill={drawingProps.fill}
+            stroke={drawingProps.stroke}
+            strokeWidth={drawingProps.strokeWidth}
+          />
+        );
+      }
+      default:
+        return <rect width={20} height={20} {...drawingProps} />;
+    }
+  }, [getShapeDrawingProps, shape]);
+
   if (!initialAnimProps) {
     return null;
   }
+
+  const svgWidth = shape.displayWidth ?? (shape.width || (shape.type === 'circle' ? shape.radius * 2 : undefined) || shape.size || 50);
+  const svgHeight = shape.displayHeight ?? (shape.height || (shape.type === 'circle' ? shape.radius * 2 : undefined) || shape.size || 50);
+  // viewBoxの調整: circleの場合、中心が(radius, radius)なので、viewBoxは "0 0 radius*2 radius*2" が適切
+  // fan-shape は shapeViewBox を持っているのでそれを優先
+  let svgViewBox = shape.shapeViewBox;
+  if (!svgViewBox) {
+      if (shape.type === 'circle' && shape.radius) {
+          svgViewBox = `0 0 ${shape.radius * 2} ${shape.radius * 2}`;
+      } else {
+          svgViewBox = `0 0 ${svgWidth} ${svgHeight}`;
+      }
+  }
+
 
   return (
     <motion.div
@@ -159,10 +349,11 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
       }}
     >
       <svg
-        width={shape.width || shape.radius * 2 || shape.size || 0} // size が 0 の場合のフォールバック
-        height={shape.height || shape.radius * 2 || shape.size || 0} // size が 0 の場合のフォールバック
-        className="overflow-visible" // SVGがクリッピングされないように
-        style={{ display: 'block' }} // 余分なスペースを避ける
+        width={svgWidth}
+        height={svgHeight}
+        viewBox={svgViewBox}
+        className="overflow-visible" // これにより、回転したrect2などがはみ出ても表示される
+        style={{ display: 'block' }}
       >
         {renderShape()}
       </svg>
@@ -170,6 +361,7 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
   );
 };
 
+// TsunaguHero コンポーネント (変更なしのため省略)
 interface TsunaguHeroProps {
   onAnimationComplete?: () => void;
 }
@@ -179,42 +371,36 @@ export default function TsunaguHero({ onAnimationComplete }: TsunaguHeroProps) {
   const [colorPhase, setColorPhase] = useState(0);
 
   useEffect(() => {
-    // 図形の移動完了を待つ
     const formationTimer = setTimeout(() => {
       setIsFormed(true);
-    }, 6000); // 全てのshape.delayの最大値 + duration(2s) を考慮した時間
+    }, 6000); 
 
-    // 色の変化開始
+    let colorIntervalId: NodeJS.Timeout | null = null;
     const colorTimer = setTimeout(() => {
-      const interval = setInterval(() => {
+      colorIntervalId = setInterval(() => {
         setColorPhase((prev) => {
-          if (prev >= 7) { // letters.length
-            clearInterval(interval);
-            if (onAnimationComplete) { // 色の変化が完了したら通知
-                // onAnimationComplete(); // このタイミングか、さらに遅延させるか
-            }
+          if (prev >= 7) { // letterIndexの最大値 + α 程度まで進める
+            if (colorIntervalId) clearInterval(colorIntervalId);
             return 7;
           }
           return prev + 0.1;
         });
-      }, 100); // 色の変化の速度
-      // interval をクリアするために return で関数を返す
-      return () => clearInterval(interval);
-    }, 6500); // formationTimer の後
+      }, 50); // 少し早めて滑らかに
+    }, 6500); // isFormed の後、少し遅れて色変化開始
 
     return () => {
       clearTimeout(formationTimer);
-      clearTimeout(colorTimer); // colorTimer 自体もクリア
+      clearTimeout(colorTimer);
+      if (colorIntervalId) clearInterval(colorIntervalId);
     };
-  }, [onAnimationComplete]);
+  }, []);
 
-  // アニメーション完了の通知 (全体のタイムアウトとして)
   useEffect(() => {
+    if (!onAnimationComplete) return;
+
     const completeTimer = setTimeout(() => {
-      if (onAnimationComplete) {
-        onAnimationComplete();
-      }
-    }, 10000); // 10秒後にアニメーション完了とみなす (適宜調整)
+      onAnimationComplete();
+    }, 10000); 
 
     return () => clearTimeout(completeTimer);
   }, [onAnimationComplete]);
@@ -223,7 +409,6 @@ export default function TsunaguHero({ onAnimationComplete }: TsunaguHeroProps) {
 
   return (
     <div className="relative w-full h-screen bg-white overflow-hidden flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      {/* 格子線の背景 */}
       <div className="absolute inset-0 opacity-30">
         <svg width="100%" height="100%" className="absolute inset-0">
           <defs>
@@ -237,26 +422,25 @@ export default function TsunaguHero({ onAnimationComplete }: TsunaguHeroProps) {
 
       <motion.div
         className="relative h-[200px] sm:h-[300px] lg:h-[400px] z-10 scale-[35%] sm:scale-75 lg:scale-100 -translate-x-[100px] sm:translate-x-0"
-        style={{ width: '980px' }} // コンテンツの基本幅を指定
+        style={{ width: '980px' }} // 文字全体のコンテナ幅
       >
-        {letters.map((letter, letterIndex) => (
-          // letterShapesの型安全性を高めるために、letterがキーとして存在するか確認
+        {letters.map((letter, letterIndex) =>
           (letterShapes[letter as keyof typeof letterShapes] || []).map((shape, shapeIndex) => (
             <Shape
-              key={`${letter}-${letterIndex}-${shapeIndex}`} // より一意なキー
+              key={`${letter}-${letterIndex}-${shapeIndex}`}
               shape={shape}
               letterIndex={letterIndex}
               isFormed={isFormed}
               colorPhase={colorPhase}
             />
           ))
-        ))}
+        )}
       </motion.div>
-      {/* 背景の装飾的な図形 */}
+      {/* 装飾用のmotion.divは変更なし */}
       <motion.div
         className="absolute top-20 left-20 w-8 h-8 border-2 border-gray-300 rounded-full z-20"
         animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }} // Infinity を使用
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
       />
       <motion.div
         className="absolute bottom-32 right-32 w-6 h-6 bg-gray-200 z-20"
