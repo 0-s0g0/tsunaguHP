@@ -92,146 +92,80 @@ export const letterShapes = {
   ],
 }
 
-// ヘルパー関数 (グローバルまたはコンポーネントのスコープ内に配置)
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-  hex = hex.replace(shorthandRegex, (m, r, g, b) => {
-    return r + r + g + g + b + b;
-  });
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
-}
-
-
-
 
 // 図形コンポーネント
-const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
+const Shape = ({ shape, letterIndex, isFormed }: any) => {
   const [initialAnimProps, setInitialAnimProps] = useState<null | {
-    x: number;
-    y: number;
-    rotate: number;
-    scale: number;
-  }>(null);
+    x: number
+    y: number
+    rotate: number
+    scale: number
+  }>(null)
 
   useEffect(() => {
-    const angle = Math.random() * 2 * Math.PI;
-    const distance = 800 + Math.random() * 400;
+    const angle = Math.random() * 2 * Math.PI
+    const distance = 800 + Math.random() * 400
     setInitialAnimProps({
       x: Math.cos(angle) * distance,
       y: Math.sin(angle) * distance,
       rotate: Math.random() * 360,
       scale: 0.5,
-    });
-  }, []);
+    })
+  }, [])
 
-  const finalX = letterIndex * 140 + shape.x;
-  const finalY = 200 + shape.y;
+  const finalX = letterIndex * 140 + shape.x
+  const finalY = 200 + shape.y
 
   const getShapeDrawingProps = useCallback(() => {
-    const initialFillColor = "#FFFFFF"; // グレー
-    const initialStrokeColor = "#000000"; // 黒
-    const initialStrokeWidth = 1; // 移動中の淵の太さ
-
-    // shape.color がない場合はデフォルトで黒にする
-    const targetShapeColor = shape.color || "#000000";
-
-    if (!isFormed) {
-      return {
-        fill: initialFillColor,
-        stroke: initialStrokeColor,
-        strokeWidth: initialStrokeWidth,
-      };
-    }
-
-    // isFormed === true (移動完了後)
-    // letterProgress: 0 (色変化開始前) -> 1 (完全に指定色)
-    const letterProgress = Math.max(0, Math.min(1, (colorPhase - letterIndex * 0.3 - 0.5) / 0.5)); // 微調整
-
-    const startRgb = hexToRgb(initialFillColor);
-    const endRgb = hexToRgb(targetShapeColor);
-
-    let currentFill = targetShapeColor;
-    if (startRgb && endRgb) {
-      const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * letterProgress);
-      const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * letterProgress);
-      const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * letterProgress);
-      currentFill = `rgb(${r},${g},${b})`;
-    }
-    
-    // ストロークは色づき始めると消える
-    const currentStrokeWidth = initialStrokeWidth * (1 - letterProgress);
-    const currentStroke = letterProgress < 1 ? initialStrokeColor : "none";
+    // 常にカラフルな色を使用
+    const targetShapeColor = shape.color || "#000000"
 
 
     return {
-      fill: currentFill,
-      stroke: currentStroke,
-      strokeWidth: currentStrokeWidth,
-    };
-  }, [isFormed, colorPhase, letterIndex, shape.color, shape.type, shape.strokeWidth]);
-
+      fill: targetShapeColor,
+      stroke: "none",
+      strokeWidth: 0,
+    }
+  }, [shape.color, shape.type, shape.strokeWidth])
 
   const renderShape = useCallback(() => {
-    const drawingProps = getShapeDrawingProps();
+    const drawingProps = getShapeDrawingProps()
 
     switch (shape.type) {
       case "rect":
-        return (
-          <rect
-            width={shape.width}
-            height={shape.height}
-            rx={2}
-            {...drawingProps}
-          />
-        );
+        return <rect width={shape.width} height={shape.height} rx={2} {...drawingProps} />
       case "circle":
-        return (
-          <circle
-            r={shape.radius}
-            cx={shape.radius}
-            cy={shape.radius}
-            {...drawingProps}
-          />
-        );
+        return <circle r={shape.radius} cx={shape.radius} cy={shape.radius} {...drawingProps} />
       case "rect2": {
-        const rotationAngle = shape.angle || 0;
-        const transformValue = `rotate(${rotationAngle} ${shape.width / 2} ${shape.height / 2})`;
-        return (
-          <rect
-            width={shape.width}
-            height={shape.height}
-            rx={2}
-            transform={transformValue}
-            {...drawingProps}
-          />
-        );
+        const rotationAngle = shape.angle || 0
+        const transformValue = `rotate(${rotationAngle} ${shape.width / 2} ${shape.height / 2})`
+        return <rect width={shape.width} height={shape.height} rx={2} transform={transformValue} {...drawingProps} />
       }
       case "fan-shape": {
-        const params = shape.shapeParams || {};
-        const pivotX = params.pivotX ?? 0;
-        const pivotY = params.pivotY ?? 0;
-        const radius = params.radius;
-        const arcStartX = params.arcStartX;
-        const arcStartY = params.arcStartY;
-        const arcEndX = params.arcEndX;
-        const arcEndY = params.arcEndY;
-        const largeArcFlag = params.arcLargeFlag ?? 0;
-        const sweepFlag = params.arcSweepFlag ?? 1;
+        const params = shape.shapeParams || {}
+        const pivotX = params.pivotX ?? 0
+        const pivotY = params.pivotY ?? 0
+        const radius = params.radius
+        const arcStartX = params.arcStartX
+        const arcStartY = params.arcStartY
+        const arcEndX = params.arcEndX
+        const arcEndY = params.arcEndY
+        const largeArcFlag = params.arcLargeFlag ?? 0
+        const sweepFlag = params.arcSweepFlag ?? 1
 
-        if (radius === undefined || arcStartX === undefined || arcStartY === undefined || arcEndX === undefined || arcEndY === undefined) {
-          console.warn("Fan shape is missing required parameters in shapeParams:", shape);
-          return <rect width="10" height="10" fill="red" />;
+        if (
+          radius === undefined ||
+          arcStartX === undefined ||
+          arcStartY === undefined ||
+          arcEndX === undefined ||
+          arcEndY === undefined
+        ) {
+          console.warn("Fan shape is missing required parameters in shapeParams:", shape)
+          return <rect width="10" height="10" fill="red" />
         }
 
-        const d = `M ${pivotX} ${pivotY} L ${arcStartX} ${arcStartY} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${arcEndX} ${arcEndY} Z`;
-        
+        const d = `M ${pivotX} ${pivotY} L ${arcStartX} ${arcStartY} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${arcEndX} ${arcEndY} Z`
+
         return (
           <path
             d={d}
@@ -240,30 +174,31 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
             stroke={drawingProps.stroke}
             strokeWidth={drawingProps.strokeWidth}
           />
-        );
+        )
       }
       default:
-        return <rect width={20} height={20} {...drawingProps} />;
+        return <rect width={20} height={20} {...drawingProps} />
     }
-  }, [getShapeDrawingProps, shape]);
+  }, [getShapeDrawingProps, shape])
 
   if (!initialAnimProps) {
-    return null;
+    return null
   }
 
-  const svgWidth = shape.displayWidth ?? (shape.width || (shape.type === 'circle' ? shape.radius * 2 : undefined) || shape.size || 50);
-  const svgHeight = shape.displayHeight ?? (shape.height || (shape.type === 'circle' ? shape.radius * 2 : undefined) || shape.size || 50);
-  // viewBoxの調整: circleの場合、中心が(radius, radius)なので、viewBoxは "0 0 radius*2 radius*2" が適切
-  // fan-shape は shapeViewBox を持っているのでそれを優先
-  let svgViewBox = shape.shapeViewBox;
+  const svgWidth =
+    shape.displayWidth ?? (shape.width || (shape.type === "circle" ? shape.radius * 2 : undefined) || shape.size || 50)
+  const svgHeight =
+    shape.displayHeight ??
+    (shape.height || (shape.type === "circle" ? shape.radius * 2 : undefined) || shape.size || 50)
+
+  let svgViewBox = shape.shapeViewBox
   if (!svgViewBox) {
-      if (shape.type === 'circle' && shape.radius) {
-          svgViewBox = `0 0 ${shape.radius * 2} ${shape.radius * 2}`;
-      } else {
-          svgViewBox = `0 0 ${svgWidth} ${svgHeight}`;
-      }
+    if (shape.type === "circle" && shape.radius) {
+      svgViewBox = `0 0 ${shape.radius * 2} ${shape.radius * 2}`
+    } else {
+      svgViewBox = `0 0 ${svgWidth} ${svgHeight}`
+    }
   }
-
 
   return (
     <motion.div
@@ -285,77 +220,59 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
         width={svgWidth}
         height={svgHeight}
         viewBox={svgViewBox}
-        className="overflow-visible" // これにより、回転したrect2などがはみ出ても表示される
-        style={{ display: 'block' }}
+        className="overflow-visible"
+        style={{ display: "block" }}
       >
         {renderShape()}
       </svg>
     </motion.div>
-  );
-};
-
-// TsunaguHero コンポーネント (変更なしのため省略)
-interface TsunaguHeroProps {
-  onAnimationComplete?: () => void;
+  )
 }
 
-export default function TsunaguHero({ onAnimationComplete }: TsunaguHeroProps) {
-  const [isFormed, setIsFormed] = useState(false);
-  const [colorPhase, setColorPhase] = useState(0);
+interface TsunaguHeroProps {
+  onAnimationComplete?: () => void
+}
+
+export default function TsunaguHero6({ onAnimationComplete }: TsunaguHeroProps) {
+  const [isFormed, setIsFormed] = useState(false)
 
   useEffect(() => {
     const formationTimer = setTimeout(() => {
-      setIsFormed(true);
-    }, 6000); 
-
-    let colorIntervalId: NodeJS.Timeout | null = null;
-    const colorTimer = setTimeout(() => {
-      colorIntervalId = setInterval(() => {
-        setColorPhase((prev) => {
-          if (prev >= 7) { // letterIndexの最大値 + α 程度まで進める
-            if (colorIntervalId) clearInterval(colorIntervalId);
-            return 7;
-          }
-          return prev + 0.1;
-        });
-      }, 50); // 少し早めて滑らかに
-    }, 6500); // isFormed の後、少し遅れて色変化開始
+      setIsFormed(true)
+    }, 6000) // 格子アニメーションがなくなったため、この遅延は調整が必要かもしれません
 
     return () => {
-      clearTimeout(formationTimer);
-      clearTimeout(colorTimer);
-      if (colorIntervalId) clearInterval(colorIntervalId);
-    };
-  }, []);
+      clearTimeout(formationTimer)
+    }
+  }, [])
 
   useEffect(() => {
-    if (!onAnimationComplete) return;
+    if (!onAnimationComplete) return
 
+    // 格子アニメーションがなくなったため、完了タイミングを調整
+    // Shapeのアニメーションが約2秒 + delayなので、最大のdelayを考慮して設定
+    // letterShapes内の最大のdelay値に基づいて調整するとより正確になります
     const completeTimer = setTimeout(() => {
-      onAnimationComplete();
-    }, 10000); 
+      onAnimationComplete()
+    }, 8000) // この値はShapeアニメーションの持続時間とdelayに基づいて調整してください
 
-    return () => clearTimeout(completeTimer);
-  }, [onAnimationComplete]);
+    return () => clearTimeout(completeTimer)
+  }, [onAnimationComplete])
 
-  const letters = ["T", "S", "U1", "N", "A", "G", "U2"];
+  const letters = ["T", "S", "U1", "N", "A", "G", "U2"]
 
   return (
     <div className="relative w-full h-screen bg-gray-100 overflow-hidden flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="absolute inset-0 opacity-30">
-        <svg width="100%" height="100%" className="absolute inset-0">
-          <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e5e7eb" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
+      {/* AnimatedGridコンポーネントの呼び出しを削除 */}
+      {/*
+      <div className="absolute inset-0 opacity-80">
+        <AnimatedGrid />
       </div>
+      */}
 
       <motion.div
         className="relative h-[200px] sm:h-[300px] lg:h-[400px] z-10 scale-[35%] sm:scale-75 lg:scale-100 -translate-x-[100px] sm:translate-x-0"
-        style={{ width: '980px' }} // 文字全体のコンテナ幅
+        style={{ width: "980px" }}
       >
         {letters.map((letter, letterIndex) =>
           (letterShapes[letter as keyof typeof letterShapes] || []).map((shape, shapeIndex) => (
@@ -363,28 +280,27 @@ export default function TsunaguHero({ onAnimationComplete }: TsunaguHeroProps) {
               key={`${letter}-${letterIndex}-${shapeIndex}`}
               shape={shape}
               letterIndex={letterIndex}
-              isFormed={isFormed}
-              colorPhase={colorPhase}
+              isFormed={isFormed} // isFormed は Shapeコンポーネント内で現在使用されていませんが、将来的に使用する可能性を考慮して残しています
             />
-          ))
+          )),
         )}
       </motion.div>
-      {/* 装飾用のmotion.divは変更なし */}
+
       <motion.div
         className="absolute top-20 left-20 w-8 h-8 border-2 border-gray-300 rounded-full z-20"
         animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
       />
       <motion.div
         className="absolute bottom-32 right-32 w-6 h-6 bg-gray-200 z-20"
         animate={{ rotate: -360 }}
-        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 25, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
       />
       <motion.div
         className="absolute top-1/3 right-20 w-10 h-5 border-2 border-gray-300 rounded-full z-20"
         animate={{ y: [0, -20, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
       />
     </div>
-  );
+  )
 }
