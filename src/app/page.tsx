@@ -3,9 +3,17 @@
 import { useState } from "react"
 
 import TsunaguHero from "./components/Home/HomeMain/tsunaguAnimation"
+import TsunaguHero2 from "./components/Home/HomeMain/tsunaguAnimationCamera"
+import TsunaguHero3 from "./components/Home/HomeMain/tsunagucolorKousi"
+import TsunaguHero4 from "./components/Home/HomeMain/tsunaguBlackAnimation"
+import TsunaguHero5 from "./components/Home/HomeMain/tsunaguBackcolor"
+import TsunaguHero6 from "./components/Home/HomeMain/tsunaguAnimationColorOnly"
+import TsunaguHeroEnhanced from "./components/Home/HomeMain/tsunaguAnimationRouted"
+
 import Header from "./components/Commonlayout/Header/Header" 
 import Footer from "./components/Commonlayout/Footer/Footer"
 import OurViews from "./components/Home/OurViews"
+
 
 export default function Page() {
   const [showHeader, setShowHeader] = useState(false)
@@ -20,7 +28,7 @@ export default function Page() {
 
       <main>
         <section id="home">
-          <TsunaguHero onAnimationComplete={handleAnimationComplete} />
+          <TsunaguHeroEnhanced onAnimationComplete={handleAnimationComplete} />
         </section>
 
         <OurViews />
