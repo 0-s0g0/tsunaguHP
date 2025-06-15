@@ -28,7 +28,7 @@ export default function Page() {
 
       <main>
         <section id="home">
-          <TsunaguHeroEnhanced onAnimationComplete={handleAnimationComplete} />
+          <TsunaguHero4 onAnimationComplete={handleAnimationComplete} />
         </section>
 
         <OurViews />
