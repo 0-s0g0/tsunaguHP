@@ -1,1 +1,2 @@
-# 一般財団法人TSUNAGU Webサイト
+### 一般財団法人TSUNAGU Webサイト
+メインビジュアル
