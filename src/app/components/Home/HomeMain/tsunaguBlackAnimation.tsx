@@ -339,17 +339,27 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
   }>(null)
 
   useEffect(() => {
-    const angle = Math.random() * 2 * Math.PI
-    const distance = 800 + Math.random() * 400
-    setInitialAnimProps({
-      x: Math.cos(angle) * distance,
-      y: Math.sin(angle) * distance,
-      rotate: Math.random() * 360,
-      scale: 0.5,
-    })
-  }, [])
-
-
+    if (letterIndex === 0) {
+      // T letter only
+      // T の部材は上から落下
+      setInitialAnimProps({
+        x: letterIndex * 140 + shape.x, // 最終位置のX座標
+        y: -200 - Math.random() * 100, // 上から落下
+        rotate: Math.random() * 20 - 10, // 軽い回転
+        scale: 1,
+      })
+    } else {
+      // 他の文字は元のアニメーション
+      const angle = Math.random() * 2 * Math.PI
+      const distance = 800 + Math.random() * 400
+      setInitialAnimProps({
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance,
+        rotate: Math.random() * 360,
+        scale: 0.5,
+      })
+    }
+  }, [letterIndex, shape.x])
 
   const finalX = letterIndex * 140 + shape.x
   const finalY = 200 + shape.y
@@ -484,17 +494,35 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
     <motion.div
       className="absolute"
       initial={initialAnimProps}
-      animate={{
-        x: finalX,
-        y: finalY,
-        rotate: 0,
-        scale: 1,
-      }}
-      transition={{
-        duration: 2,
-        delay: shape.delay,
-        ease: "easeOut",
-      }}
+      animate={
+        letterIndex === 0 // T letter only
+          ? {
+              x: finalX,
+              y: [initialAnimProps.y, finalY + 80, finalY - 20, finalY + 10, finalY], // 板に当たってバウンド
+              rotate: [initialAnimProps.rotate, 5, -3, 1, 0], // バウンド時の回転
+              scale: [1, 0.9, 1.1, 0.95, 1], // バウンド時のスケール変化
+            }
+          : {
+              x: finalX,
+              y: finalY,
+              rotate: 0,
+              scale: 1,
+            }
+      }
+      transition={
+        letterIndex === 0 // T letter only
+          ? {
+              duration: 2.0,
+              delay: shape.delay,
+              ease: "easeOut",
+              times: [0, 0.6, 0.75, 0.9, 1], // バウンドのタイミング制御
+            }
+          : {
+              duration: 2,
+              delay: shape.delay,
+              ease: "easeOut",
+            }
+      }
     >
       <svg
         width={svgWidth}
@@ -505,13 +533,14 @@ const Shape = ({ shape, letterIndex, isFormed, colorPhase }: any) => {
       >
         {renderShape()}
       </svg>
+
     </motion.div>
   )
 }
 
 // ひらがな文字コンポーネント
 const HiraganaCharacter = ({ index, isVisible }: { index: number; isVisible: boolean }) => {
-  const hiraganaChars = ["う", "ご", "く","、", "つ", "な","が","る","、","は","み","だ","す"]
+  const hiraganaChars = ["う", "ご", "く", "、", "つ", "な", "が", "る", "、", "は", "み", "だ", "す","。"]
 
   return (
     <motion.div
@@ -523,7 +552,7 @@ const HiraganaCharacter = ({ index, isVisible }: { index: number; isVisible: boo
         ease: "easeOut",
       }}
       style={{
-        left: `${index * 60+80 }px`,
+        left: `${index * 60 + 80}px`,
         top: "50px",
         width: "40px",
         height: "40px",
@@ -640,22 +669,23 @@ export default function TsunaguHero4({ onAnimationComplete }: TsunaguHeroProps) 
         style={{ width: "980px" }}
       >
         {/* TSUNAGU文字のアニメーション */}
-        {isClient && letters.map((letter, letterIndex) =>
-          (letterShapes[letter as keyof typeof letterShapes] || []).map((shape, shapeIndex) => (
-            <Shape
-              key={`${letter}-${letterIndex}-${shapeIndex}`}
-              shape={shape}
-              letterIndex={letterIndex}
-              isFormed={isFormed}
-              colorPhase={colorPhase}
-            />
-          )),
-        )}
+        {isClient &&
+          letters.map((letter, letterIndex) =>
+            (letterShapes[letter as keyof typeof letterShapes] || []).map((shape, shapeIndex) => (
+              <Shape
+                key={`${letter}-${letterIndex}-${shapeIndex}`}
+                shape={shape}
+                letterIndex={letterIndex}
+                isFormed={isFormed}
+                colorPhase={colorPhase}
+              />
+            )),
+          )}
 
         {/* ひらがな文字の表示 */}
         {showHiragana && (
           <>
-            {[0, 1, 2, 3, 4,5,6,7,8,9,10,11,12,13,].map((index) => (
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((index) => (
               <HiraganaCharacter key={`hiragana-${index}`} index={index} isVisible={index < visibleHiraganaCount} />
             ))}
           </>
